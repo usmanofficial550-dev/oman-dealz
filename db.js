@@ -1,313 +1,123 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Oman Dealz</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Tajawal:wght@500;700&display=swap" rel="stylesheet">
-<style>
-  :root{ --bg:#0E1015; --panel:#181B22; --ink:#F3F2ED; --ink-soft:#9B9A93; --forest:#FF5A3C; --line:#2A2E38; --red:#FF7A63; }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;}
-  h1,h2{font-family:'Space Grotesk',sans-serif;}
-  .mono{font-family:'IBM Plex Mono',monospace;}
-  header{display:flex; justify-content:space-between; align-items:center; padding:18px 32px; border-bottom:1px solid var(--line); background:var(--bg);}
-  .logo{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px;}
-  .logo span{color:var(--forest);}
-  .brand{display:flex; align-items:center; gap:10px;}
-  .brand-mark{width:34px; height:34px; border-radius:8px; background:var(--forest); display:flex;
-    align-items:center; justify-content:center; flex-shrink:0;}
-  .brand-mark svg{width:20px; height:20px;}
-  .brand-text{display:flex; flex-direction:column; line-height:1.1;}
-  .brand-text .en{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:16px;}
-  .brand-text .en em{color:#E8442F; font-style:normal;}
-  .brand-text .ar{font-family:'Tajawal',sans-serif; font-weight:500; font-size:10px; color:var(--ink-soft); direction:rtl;}
-  nav{display:flex; gap:8px;}
-  nav button{background:none; border:1px solid var(--line); padding:8px 16px; border-radius:3px; cursor:pointer; font-size:13px; font-weight:600; color:var(--ink);}
-  nav button.active{background:var(--forest); color:#fff; border-color:var(--forest);}
-  #logout-btn{background:none; border:1px solid var(--line); padding:8px 16px; border-radius:3px; cursor:pointer; font-size:13px; color:var(--ink-soft);}
-  main{max-width:900px; margin:0 auto; padding:32px;}
+const fs = require('fs');
+const path = require('path');
 
-  /* Login screen */
-  #login-screen{min-height:100vh; display:flex; align-items:center; justify-content:center;}
-  .login-box{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:40px; width:340px;}
-  .login-box h1{font-size:22px; margin:0 0 6px;}
-  .login-box p{color:var(--ink-soft); font-size:13px; margin:0 0 24px;}
-  .field{margin-bottom:14px;}
-  .field label{display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--ink-soft);}
-  .field input, .field textarea, .field select{width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:3px; font-size:14px; font-family:'Inter',sans-serif; background:var(--panel);}
-  .field-row{display:flex; gap:12px;}
-  .field-row .field{flex:1;}
-  .btn{background:var(--ink); color:var(--bg); border:none; padding:12px; border-radius:3px; font-size:14px; font-weight:600; cursor:pointer; width:100%;}
-  .btn.secondary{background:transparent; border:1px solid var(--line); color:var(--ink);}
-  .error-msg{color:var(--red); font-size:13px; margin-top:10px; display:none;}
+const DB_FILE = path.join(__dirname, 'data.json');
 
-  /* Product management */
-  .panel{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:24px; margin-bottom:24px;}
-  .panel h2{font-size:18px; margin:0 0 18px;}
-  table{width:100%; border-collapse:collapse;}
-  th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--ink-soft); padding:8px; border-bottom:1px solid var(--line);}
-  td{padding:10px 8px; border-bottom:1px solid var(--line); font-size:14px; vertical-align:middle;}
-  .thumb-cell{width:44px; height:44px; border-radius:3px; background:var(--bg); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; overflow:hidden;}
-  .thumb-cell img{width:100%; height:100%; object-fit:cover;}
-  .stock-badge{font-size:11px; padding:3px 8px; border-radius:10px; font-weight:600;}
-  .stock-badge.in{background:#1E2E27; color:#5FD9A4;}
-  .stock-badge.out{background:#332020; color:var(--red);}
-  .row-actions{display:flex; gap:8px;}
-  .row-actions button{background:none; border:1px solid var(--line); padding:5px 10px; border-radius:3px; cursor:pointer; font-size:12px;}
-  .row-actions .delete-btn{color:var(--red); border-color:#4A2C28;}
-  #hidden-views{display:none;}
-  .view{display:none;}
-  .view.active{display:block;}
-  .empty-row td{text-align:center; color:var(--ink-soft); padding:30px;}
-  .order-card{border:1px solid var(--line); border-radius:4px; padding:16px; margin-bottom:12px;}
-  .order-head{display:flex; justify-content:space-between; margin-bottom:8px;}
-  .order-head .name{font-weight:600;}
-  .order-head .total{font-family:'IBM Plex Mono',monospace; font-weight:600;}
-  .order-meta{font-size:12px; color:var(--ink-soft); margin-bottom:10px;}
-  .order-items{font-size:13px; color:var(--ink-soft); margin-bottom:10px;}
-  select.status-select{width:auto; padding:6px 10px; font-size:12px;}
-</style>
-</head>
-<body>
-
-<div id="login-screen">
-  <div class="login-box">
-    <div class="brand" style="margin-bottom:20px;">
-      <div class="brand-mark">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 12L10 18L20 6" stroke="#FAFAF8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="12" cy="12" r="10.5" stroke="#FAFAF8" stroke-width="1.4"/>
-        </svg>
-      </div>
-      <div class="brand-text">
-        <span class="en">Oman <em>Dealz</em></span>
-        <span class="ar">عروض عُمان</span>
-      </div>
-    </div>
-    <h1>Admin login</h1>
-    <p>Store management</p>
-    <div class="field"><label>Username</label><input type="text" id="login-user"></div>
-    <div class="field"><label>Password</label><input type="password" id="login-pass"></div>
-    <button class="btn" onclick="doLogin()">Log in</button>
-    <div class="error-msg" id="login-error">Invalid username or password.</div>
-  </div>
-</div>
-
-<div id="admin-app" style="display:none;">
-  <header>
-    <div class="brand">
-      <div class="brand-mark">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 12L10 18L20 6" stroke="#FAFAF8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="12" cy="12" r="10.5" stroke="#FAFAF8" stroke-width="1.4"/>
-        </svg>
-      </div>
-      <div class="brand-text">
-        <span class="en">Oman <em>Dealz</em> · Admin</span>
-        <span class="ar">عروض عُمان</span>
-      </div>
-    </div>
-    <nav>
-      <button class="nav-btn active" data-view="products-view" onclick="switchView('products-view')">Products</button>
-      <button class="nav-btn" data-view="orders-view" onclick="switchView('orders-view')">Orders</button>
-      <button id="logout-btn" onclick="doLogout()">Log out</button>
-    </nav>
-  </header>
-
-  <main>
-    <div id="products-view" class="view active">
-      <div class="panel">
-        <h2 id="form-title">Add a product</h2>
-        <input type="hidden" id="product-id">
-        <div class="field"><label>Product name</label><input type="text" id="p-name"></div>
-        <div class="field"><label>Description</label><textarea id="p-desc" rows="2"></textarea></div>
-        <div class="field-row">
-          <div class="field"><label>Price (OMR)</label><input type="number" step="0.001" id="p-price"></div>
-          <div class="field"><label>In stock?</label>
-            <select id="p-stock"><option value="1">In stock</option><option value="0">Out of stock</option></select>
-          </div>
-        </div>
-        <div class="field"><label>Image URL</label><input type="text" id="p-image" placeholder="https://..."></div>
-        <div style="display:flex; gap:10px;">
-          <button class="btn" onclick="saveProduct()" id="save-btn">Add product</button>
-          <button class="btn secondary" onclick="resetForm()" id="cancel-btn" style="display:none;">Cancel</button>
-        </div>
-      </div>
-
-      <div class="panel">
-        <h2>Your products</h2>
-        <table>
-          <thead><tr><th></th><th>Name</th><th>Price</th><th>Status</th><th></th></tr></thead>
-          <tbody id="product-rows"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="orders-view" class="view">
-      <div class="panel">
-        <h2>Orders</h2>
-        <div id="orders-list"></div>
-      </div>
-    </div>
-  </main>
-</div>
-
-<script>
-async function checkAuth(){
-  const res = await fetch('/api/admin/check');
-  const data = await res.json();
-  if(data.isAdmin){
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('admin-app').style.display = 'block';
-    loadProducts();
+function loadData() {
+  if (!fs.existsSync(DB_FILE)) {
+    const initial = {
+      nextProductId: 2,
+      nextOrderId: 1,
+      products: [
+        {
+          id: 1,
+          name: 'Sample Product',
+          description: 'Replace this with your real products from the admin panel.',
+          price: 9.99,
+          image_url: '',
+          in_stock: 1,
+          created_at: new Date().toISOString()
+        }
+      ],
+      orders: []
+    };
+    fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2));
+    return initial;
   }
+  return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
 }
 
-async function doLogin(){
-  const username = document.getElementById('login-user').value;
-  const password = document.getElementById('login-pass').value;
-  const res = await fetch('/api/admin/login', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ username, password })
-  });
-  if(res.ok){
-    checkAuth();
-  }else{
-    document.getElementById('login-error').style.display = 'block';
-  }
+function saveData(data) {
+  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 }
 
-async function doLogout(){
-  await fetch('/api/admin/logout', { method: 'POST' });
-  location.reload();
+// ---- Products ----
+function getProducts() {
+  const data = loadData();
+  return data.products.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
-function switchView(view){
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById(view).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector(`.nav-btn[data-view="${view}"]`).classList.add('active');
-  if(view === 'orders-view') loadOrders();
+function getProduct(id) {
+  const data = loadData();
+  return data.products.find(p => p.id === Number(id));
 }
 
-let PRODUCTS = [];
-
-async function loadProducts(){
-  const res = await fetch('/api/products');
-  PRODUCTS = await res.json();
-  renderProductRows();
-}
-
-function renderProductRows(){
-  const tbody = document.getElementById('product-rows');
-  if(PRODUCTS.length === 0){
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No products yet — add your first one above.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = PRODUCTS.map(p => `
-    <tr>
-      <td><div class="thumb-cell">${p.image_url ? `<img src="${p.image_url}">` : '🛍️'}</div></td>
-      <td>${p.name}</td>
-      <td class="mono">OMR ${p.price.toFixed(3)}</td>
-      <td><span class="stock-badge ${p.in_stock ? 'in':'out'}">${p.in_stock ? 'In stock':'Out of stock'}</span></td>
-      <td>
-        <div class="row-actions">
-          <button onclick="editProduct(${p.id})">Edit</button>
-          <button class="delete-btn" onclick="deleteProduct(${p.id})">Delete</button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function editProduct(id){
-  const p = PRODUCTS.find(p => p.id === id);
-  document.getElementById('product-id').value = p.id;
-  document.getElementById('p-name').value = p.name;
-  document.getElementById('p-desc').value = p.description || '';
-  document.getElementById('p-price').value = p.price;
-  document.getElementById('p-stock').value = p.in_stock ? '1':'0';
-  document.getElementById('p-image').value = p.image_url || '';
-  document.getElementById('form-title').textContent = 'Edit product';
-  document.getElementById('save-btn').textContent = 'Save changes';
-  document.getElementById('cancel-btn').style.display = 'inline-block';
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-
-function resetForm(){
-  document.getElementById('product-id').value = '';
-  document.getElementById('p-name').value = '';
-  document.getElementById('p-desc').value = '';
-  document.getElementById('p-price').value = '';
-  document.getElementById('p-stock').value = '1';
-  document.getElementById('p-image').value = '';
-  document.getElementById('form-title').textContent = 'Add a product';
-  document.getElementById('save-btn').textContent = 'Add product';
-  document.getElementById('cancel-btn').style.display = 'none';
-}
-
-async function saveProduct(){
-  const id = document.getElementById('product-id').value;
-  const body = {
-    name: document.getElementById('p-name').value,
-    description: document.getElementById('p-desc').value,
-    price: parseFloat(document.getElementById('p-price').value),
-    in_stock: document.getElementById('p-stock').value === '1',
-    image_url: document.getElementById('p-image').value
+function insertProduct({ name, description, price, image_url, in_stock }) {
+  const data = loadData();
+  const product = {
+    id: data.nextProductId++,
+    name,
+    description: description || '',
+    price,
+    image_url: image_url || '',
+    in_stock: in_stock ? 1 : 0,
+    created_at: new Date().toISOString()
   };
-  if(!body.name || isNaN(body.price)){
-    alert('Please enter at least a product name and price.');
-    return;
-  }
-  const url = id ? `/api/admin/products/${id}` : '/api/admin/products';
-  const method = id ? 'PUT' : 'POST';
-  await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
-  resetForm();
-  loadProducts();
+  data.products.push(product);
+  saveData(data);
+  return product.id;
 }
 
-async function deleteProduct(id){
-  if(!confirm('Delete this product?')) return;
-  await fetch(`/api/admin/products/${id}`, { method: 'DELETE' });
-  loadProducts();
+function updateProduct(id, { name, description, price, image_url, in_stock }) {
+  const data = loadData();
+  const product = data.products.find(p => p.id === Number(id));
+  if (!product) return false;
+  product.name = name;
+  product.description = description || '';
+  product.price = price;
+  product.image_url = image_url || '';
+  product.in_stock = in_stock ? 1 : 0;
+  saveData(data);
+  return true;
 }
 
-async function loadOrders(){
-  const res = await fetch('/api/admin/orders');
-  const orders = await res.json();
-  const list = document.getElementById('orders-list');
-  if(orders.length === 0){
-    list.innerHTML = '<p style="color:var(--ink-soft); font-size:14px;">No orders yet.</p>';
-    return;
-  }
-  list.innerHTML = orders.map(o => `
-    <div class="order-card">
-      <div class="order-head">
-        <span class="name">${o.customer_name}</span>
-        <span class="total mono">OMR ${o.total.toFixed(3)}</span>
-      </div>
-      <div class="order-meta">${o.email} · ${o.address}${o.city ? ', '+o.city : ''} ${o.zip || ''} · ${new Date(o.created_at).toLocaleString()}</div>
-      <div class="order-items">${o.items.map(i => `${i.qty}× ${i.name}`).join(', ')}</div>
-      <select class="status-select" onchange="updateStatus(${o.id}, this.value)">
-        <option value="pending" ${o.status==='pending'?'selected':''}>Pending</option>
-        <option value="processing" ${o.status==='processing'?'selected':''}>Processing</option>
-        <option value="shipped" ${o.status==='shipped'?'selected':''}>Shipped</option>
-        <option value="delivered" ${o.status==='delivered'?'selected':''}>Delivered</option>
-        <option value="cancelled" ${o.status==='cancelled'?'selected':''}>Cancelled</option>
-      </select>
-    </div>
-  `).join('');
+function deleteProduct(id) {
+  const data = loadData();
+  data.products = data.products.filter(p => p.id !== Number(id));
+  saveData(data);
 }
 
-async function updateStatus(id, status){
-  await fetch(`/api/admin/orders/${id}/status`, {
-    method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ status })
-  });
+// ---- Orders ----
+function getOrders() {
+  const data = loadData();
+  return data.orders.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
-checkAuth();
-</script>
-</body>
-</html>
+function insertOrder({ customer_name, email, address, city, zip, items, total }) {
+  const data = loadData();
+  const order = {
+    id: data.nextOrderId++,
+    customer_name,
+    email,
+    address,
+    city: city || '',
+    zip: zip || '',
+    items,
+    total,
+    status: 'pending',
+    created_at: new Date().toISOString()
+  };
+  data.orders.push(order);
+  saveData(data);
+  return order.id;
+}
+
+function updateOrderStatus(id, status) {
+  const data = loadData();
+  const order = data.orders.find(o => o.id === Number(id));
+  if (!order) return false;
+  order.status = status;
+  saveData(data);
+  return true;
+}
+
+module.exports = {
+  getProducts,
+  getProduct,
+  insertProduct,
+  updateProduct,
+  deleteProduct,
+  getOrders,
+  insertOrder,
+  updateOrderStatus
+};
