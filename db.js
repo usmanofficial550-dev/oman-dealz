@@ -16,6 +16,7 @@ function loadData() {
           price: 9.99,
           image_url: '',
           in_stock: 1,
+          category: 'other',
           created_at: new Date().toISOString()
         }
       ],
@@ -42,7 +43,7 @@ function getProduct(id) {
   return data.products.find(p => p.id === Number(id));
 }
 
-function insertProduct({ name, description, price, image_url, in_stock }) {
+function insertProduct({ name, description, price, image_url, in_stock, category }) {
   const data = loadData();
   const product = {
     id: data.nextProductId++,
@@ -51,6 +52,7 @@ function insertProduct({ name, description, price, image_url, in_stock }) {
     price,
     image_url: image_url || '',
     in_stock: in_stock ? 1 : 0,
+    category: category || 'other',
     created_at: new Date().toISOString()
   };
   data.products.push(product);
@@ -58,7 +60,7 @@ function insertProduct({ name, description, price, image_url, in_stock }) {
   return product.id;
 }
 
-function updateProduct(id, { name, description, price, image_url, in_stock }) {
+function updateProduct(id, { name, description, price, image_url, in_stock, category }) {
   const data = loadData();
   const product = data.products.find(p => p.id === Number(id));
   if (!product) return false;
@@ -67,6 +69,7 @@ function updateProduct(id, { name, description, price, image_url, in_stock }) {
   product.price = price;
   product.image_url = image_url || '';
   product.in_stock = in_stock ? 1 : 0;
+  product.category = category || 'other';
   saveData(data);
   return true;
 }
