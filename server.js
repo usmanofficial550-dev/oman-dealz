@@ -82,17 +82,17 @@ app.get('/api/products/:id', (req, res) => {
 
 // ============ ADMIN PRODUCT ROUTES ============
 app.post('/api/admin/products', requireAdmin, (req, res) => {
-  const { name, description, price, image_url, in_stock } = req.body;
+  const { name, description, price, image_url, in_stock, category } = req.body;
   if (!name || price == null) {
     return res.status(400).json({ error: 'Name and price are required' });
   }
-  const id = db.insertProduct({ name, description, price, image_url, in_stock });
+  const id = db.insertProduct({ name, description, price, image_url, in_stock, category });
   res.json({ id });
 });
 
 app.put('/api/admin/products/:id', requireAdmin, (req, res) => {
-  const { name, description, price, image_url, in_stock } = req.body;
-  db.updateProduct(req.params.id, { name, description, price, image_url, in_stock });
+  const { name, description, price, image_url, in_stock, category } = req.body;
+  db.updateProduct(req.params.id, { name, description, price, image_url, in_stock, category });
   res.json({ success: true });
 });
 
