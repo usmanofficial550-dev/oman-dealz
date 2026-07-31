@@ -14,6 +14,7 @@ function loadData() {
           name: 'Sample Product',
           description: 'Replace this with your real products from the admin panel.',
           price: 9.99,
+          discount_price: null,
           image_url: '',
           in_stock: 1,
           category: 'other',
@@ -43,13 +44,14 @@ function getProduct(id) {
   return data.products.find(p => p.id === Number(id));
 }
 
-function insertProduct({ name, description, price, image_url, in_stock, category }) {
+function insertProduct({ name, description, price, image_url, in_stock, category, discount_price }) {
   const data = loadData();
   const product = {
     id: data.nextProductId++,
     name,
     description: description || '',
     price,
+    discount_price: (discount_price !== undefined && discount_price !== null && discount_price !== '') ? Number(discount_price) : null,
     image_url: image_url || '',
     in_stock: in_stock ? 1 : 0,
     category: category || 'other',
@@ -60,13 +62,14 @@ function insertProduct({ name, description, price, image_url, in_stock, category
   return product.id;
 }
 
-function updateProduct(id, { name, description, price, image_url, in_stock, category }) {
+function updateProduct(id, { name, description, price, image_url, in_stock, category, discount_price }) {
   const data = loadData();
   const product = data.products.find(p => p.id === Number(id));
   if (!product) return false;
   product.name = name;
   product.description = description || '';
   product.price = price;
+  product.discount_price = (discount_price !== undefined && discount_price !== null && discount_price !== '') ? Number(discount_price) : null;
   product.image_url = image_url || '';
   product.in_stock = in_stock ? 1 : 0;
   product.category = category || 'other';
@@ -86,12 +89,13 @@ function getOrders() {
   return data.orders.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
-function insertOrder({ customer_name, email, address, city, zip, items, total }) {
+function insertOrder({ customer_name, mobile, email, address, city, zip, items, total }) {
   const data = loadData();
   const order = {
     id: data.nextOrderId++,
     customer_name,
-    email,
+    mobile,
+    email: email || '',
     address,
     city: city || '',
     zip: zip || '',
