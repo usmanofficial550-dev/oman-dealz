@@ -65,6 +65,12 @@
   .order-items{font-size:13px; color:var(--ink-soft); margin-bottom:10px;}
   select.status-select{width:auto; padding:6px 10px; font-size:12px;}
   .discount-note{font-size:11px; color:var(--ink-soft); margin-top:-8px; margin-bottom:14px;}
+  .upload-row{display:flex; gap:8px; margin-top:8px; align-items:center;}
+  .upload-row input[type="file"]{flex:1; font-size:12px; padding:6px;}
+  .upload-btn{width:auto; padding:9px 14px; font-size:12px; white-space:nowrap;}
+  .upload-status{font-size:12px; margin-top:6px; color:var(--ink-soft);}
+  .upload-status.success{color:#1E7A46;}
+  .upload-status.error{color:var(--red);}
 
   @media (max-width: 640px){
     header{padding:12px 16px;}
@@ -149,7 +155,24 @@
             <option value="other">Other</option>
           </select>
         </div>
-        <div class="field"><label>Image URL</label><input type="text" id="p-image" placeholder="https://..."></div>
+        <div class="field">
+          <label>Product image</label>
+          <input type="text" id="p-image" placeholder="Paste an image URL, or upload below">
+          <div class="upload-row">
+            <input type="file" id="p-image-file" accept="image/*">
+            <button type="button" class="btn secondary upload-btn" onclick="uploadFile('p-image-file','p-image')">Upload image</button>
+          </div>
+          <div class="upload-status" id="p-image-status"></div>
+        </div>
+        <div class="field">
+          <label>Product video <span class="opt">(optional — shows instead of the image, autoplays on the card)</span></label>
+          <input type="text" id="p-video" placeholder="Paste a video URL, or upload below">
+          <div class="upload-row">
+            <input type="file" id="p-video-file" accept="video/mp4,video/webm">
+            <button type="button" class="btn secondary upload-btn" onclick="uploadFile('p-video-file','p-video')">Upload video</button>
+          </div>
+          <div class="upload-status" id="p-video-status"></div>
+        </div>
         <div style="display:flex; gap:10px;">
           <button class="btn" onclick="saveProduct()" id="save-btn">Add product</button>
           <button class="btn secondary" onclick="resetForm()" id="cancel-btn" style="display:none;">Cancel</button>
@@ -175,6 +198,33 @@
 </div>
 
 <script>
+async function uploadFile(fileInputId, targetFieldId){
+  const fileInput = document.getElementById(fileInputId);
+  const statusId = fileInputId === 'p-image-file' ? 'p-image-status' : 'p-video-status';
+  const statusEl = document.getElementById(statusId);
+  if(!fileInput.files || fileInput.files.length === 0){
+    statusEl.textContent = 'Choose a file first.';
+    statusEl.className = 'upload-status error';
+    return;
+  }
+  const file = fileInput.files[0];
+  const formData = new FormData();
+  formData.append('image', file);
+  statusEl.textContent = 'Uploading…';
+  statusEl.className = 'upload-status';
+  try{
+    const res = await fetch('/api/admin/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Upload failed');
+    document.getElementById(targetFieldId).value = data.url;
+    statusEl.textContent = 'Uploaded ✓';
+    statusEl.className = 'upload-status success';
+  }catch(e){
+    statusEl.textContent = e.message || 'Upload failed. Try a smaller file.';
+    statusEl.className = 'upload-status error';
+  }
+}
+
 async function checkAuth(){
   const res = await fetch('/api/admin/check');
   const data = await res.json();
@@ -256,6 +306,7 @@ function editProduct(id){
   document.getElementById('p-category').value = p.category || 'other';
   document.getElementById('p-discount').value = (p.discount_price != null) ? p.discount_price : '';
   document.getElementById('p-image').value = p.image_url || '';
+  document.getElementById('p-video').value = p.video_url || '';
   document.getElementById('form-title').textContent = 'Edit product';
   document.getElementById('save-btn').textContent = 'Save changes';
   document.getElementById('cancel-btn').style.display = 'inline-block';
@@ -271,6 +322,7 @@ function resetForm(){
   document.getElementById('p-category').value = 'women';
   document.getElementById('p-discount').value = '';
   document.getElementById('p-image').value = '';
+  document.getElementById('p-video').value = '';
   document.getElementById('form-title').textContent = 'Add a product';
   document.getElementById('save-btn').textContent = 'Add product';
   document.getElementById('cancel-btn').style.display = 'none';
@@ -285,7 +337,8 @@ async function saveProduct(){
     in_stock: document.getElementById('p-stock').value === '1',
     category: document.getElementById('p-category').value,
     discount_price: document.getElementById('p-discount').value === '' ? null : parseFloat(document.getElementById('p-discount').value),
-    image_url: document.getElementById('p-image').value
+    image_url: document.getElementById('p-image').value,
+    video_url: document.getElementById('p-video').value
   };
   if(!body.name || isNaN(body.price)){
     alert('Please enter at least a product name and price.');
