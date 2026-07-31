@@ -4,7 +4,30 @@ const session = require('express-session');
 const crypto = require('crypto');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const db = require('./db');
+
+// --- Image upload setup ---
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const safeExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.mp4', '.webm'].includes(ext) ? ext : '.jpg';
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`);
+  }
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB max (covers short product videos)
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'];
+    cb(null, allowed.includes(file.mimetype));
+  }
+});
 
 // Password verification using Node's built-in crypto (no extra dependency needed)
 function verifyPassword(password, stored) {
@@ -69,6 +92,14 @@ app.get('/api/admin/check', (req, res) => {
   res.json({ isAdmin: !!(req.session && req.session.isAdmin) });
 });
 
+// ============ IMAGE UPLOAD ============
+app.post('/api/admin/upload', requireAdmin, upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No valid file received (jpg, png, webp, gif, mp4, webm only, max 25MB)' });
+  }
+  res.json({ url: `/uploads/${req.file.filename}` });
+});
+
 // ============ PUBLIC PRODUCT ROUTES ============
 app.get('/api/products', (req, res) => {
   res.json(db.getProducts());
@@ -82,17 +113,17 @@ app.get('/api/products/:id', (req, res) => {
 
 // ============ ADMIN PRODUCT ROUTES ============
 app.post('/api/admin/products', requireAdmin, (req, res) => {
-  const { name, description, price, image_url, in_stock, category, discount_price } = req.body;
+  const { name, description, price, image_url, video_url, in_stock, category, discount_price } = req.body;
   if (!name || price == null) {
     return res.status(400).json({ error: 'Name and price are required' });
   }
-  const id = db.insertProduct({ name, description, price, image_url, in_stock, category, discount_price });
+  const id = db.insertProduct({ name, description, price, image_url, video_url, in_stock, category, discount_price });
   res.json({ id });
 });
 
 app.put('/api/admin/products/:id', requireAdmin, (req, res) => {
-  const { name, description, price, image_url, in_stock, category, discount_price } = req.body;
-  db.updateProduct(req.params.id, { name, description, price, image_url, in_stock, category, discount_price });
+  const { name, description, price, image_url, video_url, in_stock, category, discount_price } = req.body;
+  db.updateProduct(req.params.id, { name, description, price, image_url, video_url, in_stock, category, discount_price });
   res.json({ success: true });
 });
 
