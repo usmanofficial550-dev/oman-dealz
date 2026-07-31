@@ -82,17 +82,17 @@ app.get('/api/products/:id', (req, res) => {
 
 // ============ ADMIN PRODUCT ROUTES ============
 app.post('/api/admin/products', requireAdmin, (req, res) => {
-  const { name, description, price, image_url, in_stock, category } = req.body;
+  const { name, description, price, image_url, in_stock, category, discount_price } = req.body;
   if (!name || price == null) {
     return res.status(400).json({ error: 'Name and price are required' });
   }
-  const id = db.insertProduct({ name, description, price, image_url, in_stock, category });
+  const id = db.insertProduct({ name, description, price, image_url, in_stock, category, discount_price });
   res.json({ id });
 });
 
 app.put('/api/admin/products/:id', requireAdmin, (req, res) => {
-  const { name, description, price, image_url, in_stock, category } = req.body;
-  db.updateProduct(req.params.id, { name, description, price, image_url, in_stock, category });
+  const { name, description, price, image_url, in_stock, category, discount_price } = req.body;
+  db.updateProduct(req.params.id, { name, description, price, image_url, in_stock, category, discount_price });
   res.json({ success: true });
 });
 
@@ -103,11 +103,11 @@ app.delete('/api/admin/products/:id', requireAdmin, (req, res) => {
 
 // ============ ORDER ROUTES ============
 app.post('/api/orders', (req, res) => {
-  const { customer_name, email, address, city, zip, items, total } = req.body;
-  if (!customer_name || !email || !address || !items || !total) {
+  const { customer_name, mobile, email, address, city, zip, items, total } = req.body;
+  if (!customer_name || !mobile || !address || !items || !total) {
     return res.status(400).json({ error: 'Missing required order fields' });
   }
-  const orderId = db.insertOrder({ customer_name, email, address, city, zip, items, total });
+  const orderId = db.insertOrder({ customer_name, mobile, email, address, city, zip, items, total });
   res.json({ success: true, orderId });
 });
 
