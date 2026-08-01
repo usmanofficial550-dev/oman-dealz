@@ -126,6 +126,7 @@
     <nav>
       <button class="nav-btn active" data-view="products-view" onclick="switchView('products-view')">Products</button>
       <button class="nav-btn" data-view="orders-view" onclick="switchView('orders-view')">Orders</button>
+      <button class="nav-btn" data-view="profit-view" onclick="switchView('profit-view')">Profit Calculator</button>
       <button id="logout-btn" onclick="doLogout()">Log out</button>
     </nav>
   </header>
@@ -139,9 +140,10 @@
         <div class="field"><label>Description</label><textarea id="p-desc" rows="2"></textarea></div>
         <div class="field-row">
           <div class="field"><label>Price (OMR)</label><input type="number" step="0.001" id="p-price"></div>
-          <div class="field"><label>In stock?</label>
-            <select id="p-stock"><option value="1">In stock</option><option value="0">Out of stock</option></select>
-          </div>
+          <div class="field"><label>Wholesale cost (OMR) <span class="opt">(optional — needed for profit calculator)</span></label><input type="number" step="0.001" id="p-wholesale"></div>
+        </div>
+        <div class="field"><label>In stock?</label>
+          <select id="p-stock"><option value="1">In stock</option><option value="0">Out of stock</option></select>
         </div>
         <div class="field"><label>Discount price (OMR) <span class="opt">(optional — leave blank for no discount)</span></label><input type="number" step="0.001" id="p-discount"></div>
         <div class="discount-note">If set, this shows as the sale price with the original price struck through.</div>
@@ -194,6 +196,30 @@
         <div id="orders-list"></div>
       </div>
     </div>
+
+    <div id="profit-view" class="view">
+      <div class="panel">
+        <h2>Shipping &amp; fee rules</h2>
+        <div class="field-row">
+          <div class="field"><label>Free shipping min items</label><input type="number" id="rule-min-qty" value="3"></div>
+          <div class="field"><label>Free shipping min total (OMR)</label><input type="number" step="0.001" id="rule-min-total" value="7.000"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Shipping fee (OMR)</label><input type="number" step="0.001" id="rule-ship-fee" value="1.500"></div>
+          <div class="field"><label>Gateway fee (%)</label><input type="number" step="0.1" id="rule-gateway-pct" value="2"></div>
+        </div>
+        <div class="field"><label>Low margin warning below (%)</label><input type="number" id="rule-margin-warn" value="20"></div>
+        <button class="btn secondary" onclick="renderProfitTable()">Recalculate</button>
+      </div>
+
+      <div class="panel">
+        <h2>Per-product profit (assumes a customer buys the free-shipping quantity above)</h2>
+        <table>
+          <thead><tr><th>Product</th><th>Wholesale</th><th>Sells for</th><th>Checkout total</th><th>Net profit</th><th>Margin</th></tr></thead>
+          <tbody id="profit-rows"></tbody>
+        </table>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -223,6 +249,55 @@ async function uploadFile(fileInputId, targetFieldId){
     statusEl.textContent = e.message || 'Upload failed. Try a smaller file.';
     statusEl.className = 'upload-status error';
   }
+}
+
+function toBaiza(omr){ const n = parseFloat(omr); return isNaN(n) ? 0 : Math.round(n * 1000); }
+function fmtOMRb(baiza){ return 'OMR ' + (baiza/1000).toFixed(3); }
+
+function renderProfitTable(){
+  const minQty = parseInt(document.getElementById('rule-min-qty').value) || 1;
+  const minTotalBaiza = toBaiza(document.getElementById('rule-min-total').value);
+  const shipFeeBaiza = toBaiza(document.getElementById('rule-ship-fee').value);
+  const gatewayPct = parseFloat(document.getElementById('rule-gateway-pct').value) / 100 || 0;
+  const marginWarnPct = parseFloat(document.getElementById('rule-margin-warn').value) || 0;
+
+  const tbody = document.getElementById('profit-rows');
+  const priced = PRODUCTS.filter(p => p.wholesale_price != null);
+
+  if(priced.length === 0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Add a wholesale cost to your products above to see profit numbers here.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = priced.map(p => {
+    const sellPriceBaiza = toBaiza((p.discount_price != null && p.discount_price > 0) ? p.discount_price : p.price);
+    const wholesaleBaiza = toBaiza(p.wholesale_price);
+
+    const cogsBaiza = wholesaleBaiza * minQty;
+    const subtotalBaiza = sellPriceBaiza * minQty;
+
+    const qualifiesFreeShip = subtotalBaiza >= minTotalBaiza;
+    const customerShipBaiza = qualifiesFreeShip ? 0 : shipFeeBaiza;
+    const internalCourierBaiza = qualifiesFreeShip ? shipFeeBaiza : 0;
+
+    const checkoutTotalBaiza = subtotalBaiza + customerShipBaiza;
+    const gatewayFeeBaiza = Math.round(checkoutTotalBaiza * gatewayPct);
+
+    const netProfitBaiza = subtotalBaiza - cogsBaiza - internalCourierBaiza - gatewayFeeBaiza;
+    const marginPct = checkoutTotalBaiza > 0 ? (netProfitBaiza / checkoutTotalBaiza) * 100 : 0;
+    const isLow = marginPct < marginWarnPct;
+
+    return `
+      <tr>
+        <td>${p.name} <span style="color:var(--ink-soft); font-size:11px;">(×${minQty})</span></td>
+        <td class="mono">${fmtOMRb(cogsBaiza)}</td>
+        <td class="mono">${fmtOMRb(subtotalBaiza)}</td>
+        <td class="mono">${fmtOMRb(checkoutTotalBaiza)}</td>
+        <td class="mono" style="color:${isLow ? 'var(--red)' : '#1E7A46'}; font-weight:700;">${fmtOMRb(netProfitBaiza)}</td>
+        <td style="color:${isLow ? 'var(--red)' : '#1E7A46'}; font-weight:700;">${marginPct.toFixed(1)}%${isLow ? ' ⚠️' : ''}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 async function checkAuth(){
@@ -261,6 +336,7 @@ function switchView(view){
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`.nav-btn[data-view="${view}"]`).classList.add('active');
   if(view === 'orders-view') loadOrders();
+  if(view === 'profit-view') renderProfitTable();
 }
 
 let PRODUCTS = [];
@@ -303,6 +379,7 @@ function editProduct(id){
   document.getElementById('p-desc').value = p.description || '';
   document.getElementById('p-price').value = p.price;
   document.getElementById('p-stock').value = p.in_stock ? '1':'0';
+  document.getElementById('p-wholesale').value = (p.wholesale_price != null) ? p.wholesale_price : '';
   document.getElementById('p-category').value = p.category || 'other';
   document.getElementById('p-discount').value = (p.discount_price != null) ? p.discount_price : '';
   document.getElementById('p-image').value = p.image_url || '';
@@ -319,6 +396,7 @@ function resetForm(){
   document.getElementById('p-desc').value = '';
   document.getElementById('p-price').value = '';
   document.getElementById('p-stock').value = '1';
+  document.getElementById('p-wholesale').value = '';
   document.getElementById('p-category').value = 'women';
   document.getElementById('p-discount').value = '';
   document.getElementById('p-image').value = '';
@@ -335,6 +413,7 @@ async function saveProduct(){
     description: document.getElementById('p-desc').value,
     price: parseFloat(document.getElementById('p-price').value),
     in_stock: document.getElementById('p-stock').value === '1',
+    wholesale_price: document.getElementById('p-wholesale').value === '' ? null : parseFloat(document.getElementById('p-wholesale').value),
     category: document.getElementById('p-category').value,
     discount_price: document.getElementById('p-discount').value === '' ? null : parseFloat(document.getElementById('p-discount').value),
     image_url: document.getElementById('p-image').value,
@@ -371,7 +450,7 @@ async function loadOrders(){
         <span class="name">${o.customer_name}</span>
         <span class="total mono">OMR ${o.total.toFixed(3)}</span>
       </div>
-      <div class="order-meta">📱 ${o.mobile || '—'}${o.email ? ' · ' + o.email : ''} · ${o.address}${o.city ? ', '+o.city : ''} ${o.zip || ''} · ${new Date(o.created_at).toLocaleString()}</div>
+      <div class="order-meta">📱 ${o.mobile || '—'}${o.email ? ' · ' + o.email : ''}${o.address ? ' · ' + o.address : ''}${o.city ? ', '+o.city : ''}${o.zip ? ' ' + o.zip : ''} · ${new Date(o.created_at).toLocaleString()}</div>
       <div class="order-items">${o.items.map(i => `${i.qty}× ${i.name}`).join(', ')}</div>
       <select class="status-select" onchange="updateStatus(${o.id}, this.value)">
         <option value="pending" ${o.status==='pending'?'selected':''}>Pending</option>
