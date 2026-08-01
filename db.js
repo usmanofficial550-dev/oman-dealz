@@ -15,6 +15,7 @@ function loadData() {
           description: 'Replace this with your real products from the admin panel.',
           price: 9.99,
           discount_price: null,
+          wholesale_price: null,
           image_url: '',
           video_url: '',
           in_stock: 1,
@@ -45,7 +46,7 @@ function getProduct(id) {
   return data.products.find(p => p.id === Number(id));
 }
 
-function insertProduct({ name, description, price, image_url, video_url, in_stock, category, discount_price }) {
+function insertProduct({ name, description, price, image_url, video_url, in_stock, category, discount_price, wholesale_price }) {
   const data = loadData();
   const product = {
     id: data.nextProductId++,
@@ -53,6 +54,7 @@ function insertProduct({ name, description, price, image_url, video_url, in_stoc
     description: description || '',
     price,
     discount_price: (discount_price !== undefined && discount_price !== null && discount_price !== '') ? Number(discount_price) : null,
+    wholesale_price: (wholesale_price !== undefined && wholesale_price !== null && wholesale_price !== '') ? Number(wholesale_price) : null,
     image_url: image_url || '',
     video_url: video_url || '',
     in_stock: in_stock ? 1 : 0,
@@ -64,7 +66,7 @@ function insertProduct({ name, description, price, image_url, video_url, in_stoc
   return product.id;
 }
 
-function updateProduct(id, { name, description, price, image_url, video_url, in_stock, category, discount_price }) {
+function updateProduct(id, { name, description, price, image_url, video_url, in_stock, category, discount_price, wholesale_price }) {
   const data = loadData();
   const product = data.products.find(p => p.id === Number(id));
   if (!product) return false;
@@ -72,6 +74,7 @@ function updateProduct(id, { name, description, price, image_url, video_url, in_
   product.description = description || '';
   product.price = price;
   product.discount_price = (discount_price !== undefined && discount_price !== null && discount_price !== '') ? Number(discount_price) : null;
+  product.wholesale_price = (wholesale_price !== undefined && wholesale_price !== null && wholesale_price !== '') ? Number(wholesale_price) : null;
   product.image_url = image_url || '';
   product.video_url = video_url || '';
   product.in_stock = in_stock ? 1 : 0;
@@ -99,7 +102,7 @@ function insertOrder({ customer_name, mobile, email, address, city, zip, items, 
     customer_name,
     mobile,
     email: email || '',
-    address,
+    address: address || '',
     city: city || '',
     zip: zip || '',
     items,
