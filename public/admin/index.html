@@ -68,7 +68,7 @@
   .order-head .name{font-weight:600;}
   .order-head .total{font-family:'IBM Plex Mono',monospace; font-weight:600;}
   .order-meta{font-size:12px; color:var(--ink-soft); margin-bottom:10px;}
-  .order-items{font-size:13px; color:var(--ink-soft); margin-bottom:10px;}
+  .order-items{font-size:13px; color:var(--ink-soft); margin-bottom:10px; display:flex; flex-wrap:wrap;}
   select.status-select{width:auto; padding:6px 10px; font-size:12px;}
   .discount-note{font-size:11px; color:var(--ink-soft); margin-top:-8px; margin-bottom:14px;}
   .upload-row{display:flex; gap:8px; margin-top:8px; align-items:center;}
@@ -459,7 +459,11 @@ async function loadOrders(){
         <span class="total mono">OMR ${o.total.toFixed(3)}</span>
       </div>
       <div class="order-meta">📱 ${o.mobile || '—'}${o.email ? ' · ' + o.email : ''}${o.address ? ' · ' + o.address : ''}${o.city ? ', '+o.city : ''}${o.zip ? ' ' + o.zip : ''} · ${new Date(o.created_at).toLocaleString()}</div>
-      <div class="order-items">${o.items.map(i => `${i.qty}× ${i.name}`).join(', ')}</div>
+      <div class="order-items">${o.items.map(i => {
+        const p = PRODUCTS.find(p => p.id === i.id);
+        const img = p && p.image_url ? `<img src="${p.image_url}" style="width:28px;height:28px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:6px;">` : `<span style="display:inline-block;width:28px;height:28px;text-align:center;line-height:28px;background:var(--surface);border-radius:3px;margin-right:6px;">🛍️</span>`;
+        return `<span style="display:inline-flex;align-items:center;margin:4px 10px 4px 0;">${img}${i.qty}× ${i.name}</span>`;
+      }).join('')}</div>
       <select class="status-select" onchange="updateStatus(${o.id}, this.value)">
         <option value="pending" ${o.status==='pending'?'selected':''}>Pending</option>
         <option value="processing" ${o.status==='processing'?'selected':''}>Processing</option>
