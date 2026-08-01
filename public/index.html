@@ -356,7 +356,7 @@ function renderCheckoutForm(){
   document.getElementById('checkout-modal').innerHTML = `
     <button class="close-btn" onclick="closeCheckout()" style="position:absolute; top:16px; right:16px;">&times;</button>
     <h2>Checkout</h2>
-    <p class="sub">Just your name and mobile number — everything else is optional.</p>
+    <p class="sub">Cash on Delivery — just your name and mobile number, everything else is optional.</p>
     <div class="field"><label>Full name</label><input type="text" id="ck-name"></div>
     <div class="field"><label>Mobile number</label><input type="tel" id="ck-mobile" placeholder="+968 9xxxxxxx"></div>
     <div class="field"><label>Email <span class="opt">(optional)</span></label><input type="email" id="ck-email"></div>
@@ -403,7 +403,7 @@ async function placeOrder(){
       <div class="success">
         <div class="icon">✓</div>
         <h2>Order placed, ${name.split(' ')[0]}</h2>
-        <p>We've received your order and will contact you shortly<br>to confirm delivery and payment.</p>
+        <p>Cash on Delivery — pay when your order arrives.<br>We'll contact you to confirm delivery details.</p>
         <button class="place-order" onclick="finishOrder()">Back to shop</button>
       </div>`;
   }catch(e){
